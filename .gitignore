@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+.env
+.streamlit/secrets.toml
+*.key
+.fastembed_cache/
+local_cache/
+models/
+.DS_Store
+Thumbs.db
