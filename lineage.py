@@ -19,29 +19,44 @@ def load_sql() -> str:
     return "\n\n".join(p.read_text(encoding="utf-8") for p in sorted(config.SQL_DIR.glob("*.sql")))
 
 
-def column_paths() -> list[list[str]]:
-    """Deterministic column-level lineage: a list of paths (source col -> ... -> target col)."""
+def _runner():
+    """Parse the pipeline SQL once and return the LineageRunner (shared by callers)."""
     from sqllineage.runner import LineageRunner
-    runner = LineageRunner(load_sql(), dialect=config.DIALECT)
-    return [[str(col) for col in path] for path in runner.get_column_lineage()]
+    return LineageRunner(load_sql(), dialect=config.DIALECT)
+
+
+def column_paths(runner=None) -> list[list[str]]:
+    """Deterministic column-level lineage: a list of paths (source col -> ... -> target col)."""
+    r = runner or _runner()
+    return [[str(col) for col in path] for path in r.get_column_lineage()]
 
 
 def build_graph() -> nx.DiGraph:
-    """The lineage DAG: nodes = qualified columns, edges = 'feeds into'."""
+    """The lineage DAG: nodes = qualified columns, edges = 'feeds into'. SQL parsed once."""
+    r = _runner()
     g = nx.DiGraph()
-    for path in column_paths():
+    for path in column_paths(r):
         for src, dst in zip(path, path[1:]):
             g.add_edge(src, dst)
     return g
 
 
 def find_node(g: nx.DiGraph, name: str) -> str | None:
-    """Resolve a (possibly unqualified) column name to a graph node (handles the '<default>' schema)."""
+    """Resolve a (possibly unqualified) column name to a graph node.
+
+    Accepts:  exact qualified name  OR  <table>.<column> dotted suffix.
+    Rejects:  bare substring suffix (e.g. 'pd' must not match 'avg_pd').
+    Raises ValueError when multiple nodes match — the caller must disambiguate.
+    """
     name = name.lower()
     if name in g:
         return name
-    cands = [n for n in g.nodes if n.lower() == name
-             or n.lower().endswith("." + name) or n.lower().endswith(name)]
+    cands = [n for n in g.nodes if n.lower() == name or n.lower().endswith("." + name)]
+    if len(cands) > 1:
+        raise ValueError(
+            f"Ambiguous column '{name}' — matches {len(cands)} nodes: {cands}. "
+            "Use the fully-qualified form <table>.<column>."
+        )
     return cands[0] if cands else None
 
 
