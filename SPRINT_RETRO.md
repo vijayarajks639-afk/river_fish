@@ -48,6 +48,15 @@
 - Commits: **6** on `main` (unpushed). New modules: 6 `.py` + 4 `.md`.
 - Defects found by QA before downstream impact: **1 HIGH** (`find_node`) + 1 Med (double-parse) — both fixed.
 
+### Agent voices 🗣️ (the specialist agents' own retro)
+*Full executive write-up: [`Multi_Agent_Retro_Sprint1.docx`](Multi_Agent_Retro_Sprint1.docx) — for stakeholder presentations.*
+
+- **Data Generator agent** — *Went well:* clean pipeline contract (explicit SELECTs, schema catalog, exact-shape tests) made extension safe; `sql_extended/` kept the core graph stable; SEED=42 + FX join-key landed first try. *Risk:* appended **duplicate KNOWN_SCHEMA keys** for the 3 active tables (last-wins, correct today, latent foot-gun) → merge before commit; `gap_analysis.py` only globs `sql/` so extended-system gaps are invisible; offline FX falls back to 1.0 (needs a "STALE" caption on stage).
+- **Research/Docs agent** — *Went well:* read-first briefing gave exact repo vocabulary; web-verification high-yield (Spider 2.0 ICLR, Snowflake verbatim). *Risk:* vendor/Gartner claims age fast and two are vendor-blog "directional" — say "analysts suggest," not "Gartner says."
+- **Reg-RAG UI agent** — *Went well:* import-don't-modify kept the UI a thin layer; explicit Streamlit-1.41 rule prevented a broken Space. *Risk:* a **public Space with an API key lets anyone spend it** — keep public demos $0/key-less.
+
+**Common themes:** read-first briefs → near-zero rework · explicit constraints prevented broken output · the gaps were all *unstated judgment calls* (extend-vs-append, as-of dates, requirements rewrite) — fix with a brief house-style. **Top risk across all three: never put a live key on a public demo.**
+
 ---
 
 ## Planned end-of-project deliverable — "How an AI Agent Team Built This"
