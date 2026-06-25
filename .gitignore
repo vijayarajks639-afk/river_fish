@@ -10,3 +10,6 @@ local_cache/
 models/
 .DS_Store
 Thumbs.db
+
+# live market data cache (refetched on TTL)
+.market_cache.json
