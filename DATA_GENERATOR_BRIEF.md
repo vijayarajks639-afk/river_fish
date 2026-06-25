@@ -103,6 +103,20 @@ The current SQL pipeline (`sql/10..40`) and `schema.py` `KNOWN_SCHEMA` define th
 
 ## 8. Briefing Log (kept continuously informed — newest first)
 
+- **2026-06-25** — *SPUN — first generation complete.* `generate_data.py` created and
+  executed (seed=42, 500 counterparties). DuckDB `data/warehouse.duckdb` populated with
+  18,742 rows across 15 tables spanning 11 source systems. `sql_extended/` folder created
+  with 4 SQL transform files (50–80) covering FX exposure, channel activity, product
+  holdings, and campaign+sentiment+commercial marts. `schema.py` KNOWN_SCHEMA extended
+  with 32 new table entries covering all new source and mart tables. `test_lineage.py`
+  confirmed 18/18 green (core pipeline untouched: 54 columns, 49 edges). `gap_analysis.py`
+  reports 6 gap columns across 3 core systems (57% coverage). Extended systems carry ~30%
+  unconsumed columns by design (gap candidates: `cashback_earned_ytd`, `churn_score`,
+  `bureau_score_at_origination`, `news_score`, `covenant_breach_flag`, `propensity_score`,
+  `device_id_hash`, `failure_code`, etc.). FX lineage path operational:
+  `creditmart.currency` (synthetic JOIN key) → `stg_fx_rates.spot_rate` (real
+  market_data.py feed) → `stg_fx_exposure_inr.exposure_inr` (derived risk number).
+
 - **2026-06-25** — *Real market data added.* `market_data.py` now ingests LIVE public market
   data (FX: EUR/USD/GBP-INR + EUR/USD; yields: ^TNX, ^IRX; stress: ^VIX; equity: ^NSEI, ^GSPC)
   with freshness TTL + cache fallback. **Action for generator:** align synthetic data to these
@@ -122,6 +136,6 @@ The current SQL pipeline (`sql/10..40`) and `schema.py` `KNOWN_SCHEMA` define th
 
 ## 9. Status
 
-**NOT YET SPUN.** Planned spin point: **M5 (river/fish visualization)**, when richer multi-system
-data is the actual blocker. Until then this brief is maintained so the agent starts fully informed.
-To spin earlier, the maintainer can hand this file directly as the agent's task prompt.
+**SPUN — first generation complete (2026-06-25).** `generate_data.py` is live; DuckDB
+`data/warehouse.duckdb` is populated. Re-run anytime with `.venv\Scripts\python generate_data.py`.
+Core test suite 18/18 green. `sql_extended/` transforms ready for the river/fish M5 visualization.
