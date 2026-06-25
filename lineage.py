@@ -14,15 +14,23 @@ import networkx as nx
 import config
 
 
-def load_sql() -> str:
-    """Concatenate the pipeline SQL files in order (staging -> integration -> mart)."""
-    return "\n\n".join(p.read_text(encoding="utf-8") for p in sorted(config.SQL_DIR.glob("*.sql")))
+def load_sql(include_extended: bool = False) -> str:
+    """Concatenate the pipeline SQL files in order (staging -> integration -> mart).
+
+    include_extended=True also appends sql_extended/ (the richer multi-source pipeline)
+    — used by the gap view and the visualization. The core demo (include_extended=False)
+    stays stable at 54 columns / 49 edges so the regression suite never moves.
+    """
+    files = sorted(config.SQL_DIR.glob("*.sql"))
+    if include_extended and config.EXTENDED_SQL_DIR.exists():
+        files += sorted(config.EXTENDED_SQL_DIR.glob("*.sql"))
+    return "\n\n".join(p.read_text(encoding="utf-8") for p in files)
 
 
-def _runner():
+def _runner(include_extended: bool = False):
     """Parse the pipeline SQL once and return the LineageRunner (shared by callers)."""
     from sqllineage.runner import LineageRunner
-    return LineageRunner(load_sql(), dialect=config.DIALECT)
+    return LineageRunner(load_sql(include_extended), dialect=config.DIALECT)
 
 
 def column_paths(runner=None) -> list[list[str]]:
@@ -31,9 +39,9 @@ def column_paths(runner=None) -> list[list[str]]:
     return [[str(col) for col in path] for path in r.get_column_lineage()]
 
 
-def build_graph() -> nx.DiGraph:
+def build_graph(include_extended: bool = False) -> nx.DiGraph:
     """The lineage DAG: nodes = qualified columns, edges = 'feeds into'. SQL parsed once."""
-    r = _runner()
+    r = _runner(include_extended)
     g = nx.DiGraph()
     for path in column_paths(r):
         for src, dst in zip(path, path[1:]):

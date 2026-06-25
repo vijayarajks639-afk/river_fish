@@ -9,7 +9,8 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SQL_DIR = ROOT / "sql"
+SQL_DIR = ROOT / "sql"                       # core demo pipeline (stable: 54 cols / 49 edges)
+EXTENDED_SQL_DIR = ROOT / "sql_extended"     # richer multi-source pipeline (generate_data.py)
 DATA_DIR = ROOT / "data"
 
 # Source systems — two tiers:
