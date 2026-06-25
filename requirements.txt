@@ -1,0 +1,16 @@
+# Runtime dependencies for "Find My Data Path" — HuggingFace Spaces (Streamlit SDK)
+#
+# Import trace: app.py -> streamlit, config (stdlib only), lineage (networkx, sqllineage),
+#   explain (sqlglot, networkx, anthropic[lazy]), nl (anthropic[lazy], networkx),
+#   gap_analysis (networkx), market_data (urllib stdlib), limitations (stdlib only)
+#
+# Intentionally EXCLUDED:
+#   duckdb    — used only by generate_data.py (dev-time data generation); the running
+#               app reads SQL TEXT only and never opens a DuckDB connection
+#   fastembed — belongs to the sister reg_rag project; not imported anywhere in this app
+
+streamlit==1.41.0
+networkx>=3.3
+sqllineage>=1.5.3
+sqlglot>=25.0.0
+anthropic>=0.25.0

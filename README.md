@@ -1,3 +1,15 @@
+---
+title: Find My Data Path
+emoji: 🐟
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: 1.41.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # river_fish — "Find My Data Path"
 
 Column-level **data lineage discovery** for a complex, multi-source banking data pipeline, with a
