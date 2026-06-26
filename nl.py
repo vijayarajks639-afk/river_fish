@@ -57,6 +57,37 @@ def detect_intent(question: str) -> str:
     return "upstream"
 
 
+# Words that signal an ANALYTICS request (compute a metric) rather than a lineage trace.
+ANALYTICAL_CUES = ("total", "sum", "average", " avg", "count", "percent", "%", "top ",
+                   "rank", "ratio", "region wise", "region-wise", "by region", "breakdown",
+                   "distribution", "trend", "how many", "most ", "share of", "group by",
+                   "highest", "lowest", "per ")
+
+# Source systems that live ONLY in the extended pipeline (the app's toggle, default OFF).
+EXTENDED_KEYWORDS = ("atm", "card", "loan", "mobile", "campaign", "sentiment", "branch",
+                     "account", "deposit", "channel", "withdrawal", "transaction", "txn",
+                     "consumer", "commercial", "retail", "holding")
+
+
+def _short(node: str) -> str:
+    """Strip sqllineage's '<default>.' schema prefix (proper prefix removal, not lstrip)."""
+    return node[len("<default>."):] if node.startswith("<default>.") else node
+
+
+def suggest_columns(question: str, g: nx.DiGraph, k: int = 6) -> list[str]:
+    """Best-effort: columns whose name tokens overlap the question — for a helpful abstain."""
+    noise = {"raw", "stg", "mart", "id", "the", "our", "find", "total", "wise"}
+    q_tokens = set(re.findall(r"[a-z]+", question.lower())) - noise
+    scored = []
+    for n in g.nodes:
+        name_tokens = set(re.findall(r"[a-z]+", _short(n).lower())) - noise
+        overlap = len(q_tokens & name_tokens)
+        if overlap:
+            scored.append((overlap, n))
+    scored.sort(key=lambda x: (-x[0], len(x[1])))
+    return [_short(n) for _, n in scored[:k]]
+
+
 # ── Column extraction (schema-grounded) ───────────────────────────────────────
 
 def _column_index(g: nx.DiGraph) -> dict[str, list[str]]:
@@ -254,10 +285,32 @@ def answer(question: str, g: Optional[nx.DiGraph] = None) -> NLAnswer:
                 node, err, intent, used_llm = cand, None, llm_intent, True
 
     if node is None:
-        # Abstain — surface the limitation cleanly.
+        # Abstain — but make it HELPFUL, not a dead end. Explain the boundary, suggest columns,
+        # and hint when the relevant data is in the extended pipeline (toggle off by default).
+        q = question.lower()
+        parts = [err or "I couldn't ground that question to a column in this pipeline."]
+
+        if any(c in q for c in ANALYTICAL_CUES):
+            parts.append(
+                "This looks like an ANALYTICS question (a metric to compute). river_fish traces "
+                "data LINEAGE — where a column comes from and what it feeds — it does not generate "
+                "ad-hoc analytical SQL. Pick a column below and I'll show its lineage + the "
+                "inspect-SQL you'd run to build the metric yourself.")
+
+        graph_tables = " ".join(g.nodes).lower()
+        missing_sys = [kw for kw in EXTENDED_KEYWORDS if kw in q and kw not in graph_tables]
+        if missing_sys:
+            parts.append(
+                f"Note: terms like {sorted(set(missing_sys))} belong to the EXTENDED multi-source "
+                "pipeline, which is off by default — turn on 'Include extended pipeline' to bring "
+                "those systems (ATM, cards, loans, channels…) into the graph.")
+
+        sugg = suggest_columns(question, g)
+        if sugg:
+            parts.append("Closest columns you can trace: " + ", ".join(sugg) + ".")
+
         return NLAnswer(question=question, intent=intent, column=None, abstained=True,
-                        message=err or "Could not ground the question to a known column.",
-                        used_llm=used_llm)
+                        message="  ".join(parts), used_llm=used_llm)
 
     # We have a grounded column. Route by intent.
     if intent == "downstream":
