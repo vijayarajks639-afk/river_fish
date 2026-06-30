@@ -1,7 +1,10 @@
 # Sprint 1 Execution Report — river_fish (Project RF)
 
-**Prepared for:** stakeholder / delivery review  ·  **Source:** live Jira (REST API)  ·  **Date:** 2026-06-25
+**Prepared for:** stakeholder / delivery review  ·  **Source:** live Jira (REST API)  ·  **Date:** 2026-06-30
 **Companion deck:** `Sprint1_Review_river_fish.pptx`
+
+> **Sprint 1 is now formally closed in Jira** — native velocity **43 SP** / 46 committed (93%),
+> burndown available on board 6. The figures below match the live closed-sprint data.
 
 > Honest, metrics-first review. Where Jira's raw rollup is misleading (epic double-counting), the
 > correction is shown. Methodology and caveats are stated at the end.
