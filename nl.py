@@ -80,6 +80,8 @@ def suggest_columns(question: str, g: nx.DiGraph, k: int = 6) -> list[str]:
     q_tokens = set(re.findall(r"[a-z]+", question.lower())) - noise
     scored = []
     for n in g.nodes:
+        if n.endswith(".*"):           # SELECT * placeholder — not a traceable column
+            continue
         name_tokens = set(re.findall(r"[a-z]+", _short(n).lower())) - noise
         overlap = len(q_tokens & name_tokens)
         if overlap:
@@ -152,7 +154,7 @@ def extract_column(question: str, g: nx.DiGraph,
         if len(mart_nodes) == 1:
             return mart_nodes[0], None
 
-    options = ", ".join(sorted(n.lstrip("<default>.") for n in nodes))
+    options = ", ".join(sorted(_short(n) for n in nodes))
     return None, (f"'{col}' exists in several tables. Please qualify it. Options: {options}")
 
 
@@ -163,7 +165,7 @@ def inspect_sql_for_path(path: list[str]) -> list[dict]:
     seen = set()
     out = []
     for node in path:
-        parts = node.lstrip("<default>.").split(".")
+        parts = _short(node).split(".")
         if len(parts) < 2:
             continue
         table = parts[-2]
@@ -247,12 +249,12 @@ class NLAnswer:
         if self.intent == "downstream":
             lines.append(f"Used by ({len(self.consumers)} downstream column(s)):")
             for c in self.consumers[:20]:
-                lines.append(f"   -> {c.lstrip('<default>.')}")
+                lines.append(f"   -> {_short(c)}")
         else:
             lines.append(f"Sources ({len(self.sources)}): "
                          + (", ".join(s.split('.')[-1] for s in self.sources) or "(this is a source)"))
             for p in self.paths[:6]:
-                lines.append("   river ~>  " + "  ~>  ".join(n.lstrip("<default>.") for n in p))
+                lines.append("   river ~>  " + "  ~>  ".join(_short(n) for n in p))
 
         if self.explanation:
             lines.append(f"\nExplanation:\n  {self.explanation}")

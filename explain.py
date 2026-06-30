@@ -30,6 +30,11 @@ from lineage import build_graph, find_node, load_sql, trace_to_source
 
 # ── Derivation type classifier (from lineage structure — deterministic) ────────
 
+def _strip_default(s: str) -> str:
+    """Remove sqllineage's '<default>.' schema prefix (proper prefix removal, not lstrip)."""
+    return s[len("<default>."):] if s.startswith("<default>.") else s
+
+
 def _classify_derivation(derivation_sql: Optional[str]) -> str:
     """Rule-based derivation type from SQL expression text."""
     if not derivation_sql:
@@ -60,7 +65,7 @@ def extract_derivation_sql(table_name: str, column_name: str,
         import sqlglot
         import sqlglot.expressions as exp
 
-        tbl_lower = table_name.lower().lstrip("<default>.")
+        tbl_lower = _strip_default(table_name.lower())
         col_lower = column_name.lower()
 
         for stmt in sqlglot.parse(all_sql):         # no dialect="ansi" — sqlglot doesn't recognise it
@@ -222,7 +227,7 @@ def explain_column(column: str, g: Optional[nx.DiGraph] = None) -> ExplainResult
         )
 
     # Extract table + column name from the resolved node
-    parts = node.lstrip("<default>.").split(".")
+    parts = _strip_default(node).split(".")
     tbl_name = parts[-2] if len(parts) >= 2 else ""
     col_name = parts[-1]
 

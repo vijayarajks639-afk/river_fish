@@ -42,7 +42,8 @@ def get_market():
 
 
 def _short(node: str) -> str:
-    return node.lstrip("<default>.")
+    """Strip sqllineage's '<default>.' schema prefix (proper prefix removal, not lstrip)."""
+    return node[len("<default>."):] if node.startswith("<default>.") else node
 
 
 def dot_for_trace(g, node, paths) -> str:
@@ -74,7 +75,7 @@ def dot_for_trace(g, node, paths) -> str:
 def render_trace(g, node):
     """Render the full trace block for a resolved column node."""
     _, sources, paths = trace_to_source(g, node)
-    systems = sorted({s.split(".")[0].lstrip("<default>") for s in sources})
+    systems = sorted({_short(s).split(".")[0] for s in sources})
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Source columns", len(sources))
